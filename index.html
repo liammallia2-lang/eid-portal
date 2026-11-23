@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>e-ID Portal — School Demo</title>
+<style>
+:root {
+  --teal: #118da7;
+  --ink-teal: #086c83;
+  --pale: #e6f4f6;
+  --gray: #697379;
+  --dark: #374449;
+  --canvas: #f5f7f7;
+  --line: #dce5e7;
+  --card: white;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  color: var(--dark);
+  background: var(--canvas);
+  font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input { font: inherit; }
+button, summary { cursor: pointer; }
+button:disabled { cursor: default; }
+[hidden] { display: none !important; }
+:is(button, input, summary):focus-visible {
+  outline: 3px solid var(--ink-teal);
+  outline-offset: 3px;
+}
+
+#auth-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.auth-card {
+  width: min(100%, 370px);
+  padding: 28px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--teal);
+  border-radius: 16px;
+}
+
+.auth-card h1 {
+  margin: 0;
+  color: var(--ink-teal);
+  font-size: 30px;
+  letter-spacing: -.04em;
+}
+
+.auth-card h2 { font-size: 19px; margin: 26px 0 12px; }
+.demo-note { color: var(--gray); font-size: 14px; }
+
+.auth-card label {
+  display: block;
+  margin-top: 14px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 12px;
+  margin-top: 5px;
+  border: 1px solid #b5c5c9;
+  border-radius: 7px;
+}
+
+.auth-btn, .lock-btn {
+  background: var(--ink-teal);
+  color: white;
+  border: 0;
+  border-radius: 7px;
+  min-height: 44px;
+  padding: 10px 20px;
+  font-weight: 700;
+}
+
+.auth-btn { width: 100%; margin-top: 20px; }
+
+.text-btn {
+  display: block;
+  margin: 6px auto 0;
+  color: var(--ink-teal);
+  border: 0;
+  background: transparent;
+  padding: 10px;
+  min-height: 44px;
+  font-weight: 650;
+}
+
+header {
+  padding: 13px max(16px, calc((100% - 760px) / 2));
+  background: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.user-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--gray);
+  font-size: 12px;
+}
+
+.user-top > div { min-width: 0; }
+.user-top b, #h-id { display: block; overflow-wrap: anywhere; }
+.user-top b { font-size: 13px; color: var(--dark); }
+
+.top-avatar {
+  width: 32px;
+  height: 41px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.menu-toggle {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-content: center;
+  gap: 5px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink-teal);
+}
+
+.menu-toggle span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+}
+
+#drawer {
+  position: fixed;
+  inset: 0 auto 0 0;
+  margin: 0;
+  width: min(340px, 88vw);
+  height: 100%;
+  height: 100dvh;
+  max-width: 100%;
+  max-height: 100%;
+  padding: 20px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-top: 5px solid var(--teal);
+  background: #fbfdfd;
+  color: var(--dark);
+  box-shadow: 8px 0 32px #123b4925;
+}
+
+#drawer::backdrop { background: rgba(22, 51, 61, .38); }
+body:has(#drawer[open]) { overflow: hidden; }
+
+.drawer-head, .language { display: flex; align-items: center; gap: 8px; }
+.drawer-head { justify-content: space-between; }
+.drawer-head h2 { margin: 0; font-size: 24px; color: var(--ink-teal); }
+
+.drawer-head button, .language button {
+  min-width: 44px;
+  min-height: 44px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink-teal);
+  font-weight: 700;
+}
+
+.drawer-head button { font-size: 22px; }
+.language { margin: 20px 0; }
+.language button[aria-pressed="true"] { color: white; background: var(--ink-teal); }
+
+.drawer-nav button, .drawer-nav summary {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  text-align: left;
+  color: inherit;
+  font-weight: 600;
+  background: none;
+  border: 0;
+  border-radius: 7px;
+}
+
+.drawer-nav summary::after { content: '›'; margin-left: auto; }
+.drawer-nav details[open] > summary::after { transform: rotate(90deg); }
+
+.drawer-nav details > div {
+  margin-left: 12px;
+  padding-left: 8px;
+  border-left: 2px solid var(--line);
+}
+
+.drawer-nav button:hover, .drawer-nav summary:hover {
+  background: var(--pale);
+  color: var(--ink-teal);
+}
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  background: #f4f5f5;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: min(33.333%, 250px);
+  min-width: 0;
+  min-height: 74px;
+  padding: 10px 4px;
+  background: transparent;
+  color: #616a6f;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 720;
+}
+
+.tab.active {
+  color: var(--ink-teal);
+  border-bottom-color: var(--teal);
+  background: #eaf3f4;
+}
+
+.tab:focus-visible { outline-offset: -4px; }
+
+.nav-icon, .icon-svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nav-icon { width: 29px; height: 29px; stroke-width: 1.6; flex-shrink: 0; }
+.icon-svg { width: 21px; height: 21px; stroke-width: 1.6; }
+
+.section {
+  width: min(calc(100% - 32px), 740px);
+  margin: clamp(18px, 4vw, 36px) auto 0;
+}
+
+.section h2 {
+  color: var(--ink-teal);
+  font-size: clamp(24px, 4vw, 32px);
+  line-height: 1.18;
+  letter-spacing: -.035em;
+  margin: 0;
+}
+
+#info, .security-card, .faq-list {
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 15px;
+}
+
+#info {
+  text-align: center;
+  padding: 24px clamp(14px, 4vw, 34px);
+}
+
+.photo-button {
+  display: block;
+  padding: 0;
+  margin: 0 auto 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-teal);
+}
+
+.main-photo {
+  display: block;
+  width: 100px;
+  height: 126px;
+  margin: 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  object-fit: cover;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-bottom: 1px solid var(--line);
+}
+
+.info-item, .address-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: transparent;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  color: var(--dark);
+  padding: 20px 5px;
+}
+
+.info-item:not(:disabled):hover, .address-item:not(:disabled):hover { background: #f5fafb; }
+
+.icon-circle {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  margin: 0 auto 4px;
+  border-radius: 50%;
+  background: var(--pale);
+  color: var(--teal);
+}
+
+.val-main, .val-sub {
+  display: block;
+  max-width: 100%;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+#n-id-sub { font-size: 12px; color: var(--gray); font-weight: 550; }
+.lock-btn { margin-top: 6px; font-size: 13px; }
+.lock-btn:disabled, .auth-btn:disabled { opacity: .6; }
+
+.message { font-size: 14px; overflow-wrap: anywhere; color: #9c3438; }
+.message:empty { display: none; }
+.message.success { color: #286347; }
+#app-message { max-width: 740px; margin: 14px auto; padding: 0 16px; }
+
+.security-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 18px;
+  align-items: start;
+}
+
+.security-card { overflow: hidden; }
+.security-card summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 20px;
+}
+
+summary { list-style: none; }
+summary::-webkit-details-marker { display: none; }
+.security-card summary:focus-visible, .faq-list summary:focus-visible { outline-offset: -4px; }
+
+.security-art { width: 100%; height: 92px; background: #f1f0fc; border-radius: 9px; }
+.security-card:nth-child(2) .security-art { background: #e8f4f7; }
+.card-title { font-size: 19px; font-weight: 700; }
+
+.detail-link {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--ink-teal);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.detail-link::after, .faq-list summary::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border: solid var(--teal);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+details[open] > summary .detail-link::after,
+.faq-list details[open] > summary::after { transform: rotate(225deg); }
+
+.security-card p, .faq-list p {
+  margin: 0;
+  padding: 0 20px 18px;
+  color: var(--dark);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.privacy-note { font-size: 13px; color: var(--gray); }
+
+.help-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 18px clamp(15px, 4vw, 28px);
+  border-radius: 15px;
+  background: #e4f2f5;
+  margin-bottom: 16px;
+}
+
+.help-intro svg { width: clamp(95px, 24vw, 182px); height: auto; flex-shrink: 0; }
+.faq-list { overflow: hidden; }
+.faq-list details + details { border-top: 1px solid var(--line); }
+
+.faq-list summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 17px 20px;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.faq-list summary::after { flex-shrink: 0; }
+.faq-list details[open] summary { color: var(--ink-teal); }
+
+#contact {
+  padding: 24px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+}
+
+#contact button { margin-left: 0; }
+
+@media (max-width: 560px) {
+  .tab { flex-direction: column; gap: 6px; min-height: 78px; font-size: 10px; }
+  .section { width: calc(100% - 24px); }
+  .security-grid { grid-template-columns: 1fr; }
+  .security-card summary {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    column-gap: 16px;
+    align-items: end;
+    padding: 16px;
+  }
+  .security-art { grid-row: span 2; height: 72px; }
+  .detail-link { align-self: start; }
+}
+</style>
+</head>
+<body>
+
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0"
+     aria-hidden="true" style="position:absolute">
+  <symbol id="i-info" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10"/><circle cx="12" cy="9" r="2.8"/>
+    <path d="M6.5 17.5c.6-2.6 2.4-4.1 5.5-4.1s5 1.5 5.5 4.1"/>
+  </symbol>
+
+  <symbol id="i-privacy" viewBox="0 0 24 24">
+    <path d="M3.3 16.8V5.3h17.4v11.5M1.5 17.5h21l-1.6 2.4H3.1z"/>
+    <path d="M6.8 11s2.1-3.1 5.2-3.1 5.2 3.1 5.2 3.1-2.1 3.1-5.2 3.1S6.8 11 6.8 11z"/>
+    <circle cx="12" cy="11" r="1" fill="currentColor"/>
+  </symbol>
+
+  <symbol id="i-help" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M9.3 8.8a2.8 2.8 0 0 1 5.5.6c0 2.5-2.8 2.4-2.8 4.7"/>
+    <circle cx="12" cy="17" r=".9" fill="currentColor" stroke="none"/>
+  </symbol>
+
+  <symbol id="i-name" viewBox="0 0 24 24">
+    <rect x="2.2" y="5" width="19.6" height="14" rx="2.2"/>
+    <circle cx="8" cy="10" r="1.6"/>
+    <path d="M5.5 15c.4-2.3 4.5-2.3 5 0M14 9.5h4M14 13h3"/>
+  </symbol>
+
+  <symbol id="i-dob" viewBox="0 0 24 24">
+    <path d="M5 13h14v7H5zM4 20h16M5 14.5q1.7 2.6 3.5.2 1.7 2.3 3.5 0 1.7 2.3 3.5 0 1.7 2.4 3.5-.2M11 13V9h2v4"/>
+    <path d="M12 3.2c-.8 1.1-1.3 1.7-1.3 2.4a1.3 1.3 0 0 0 2.6 0c0-.7-.5-1.3-1.3-2.4z"/>
+  </symbol>
+
+  <symbol id="i-email" viewBox="0 0 24 24">
+    <rect x="2" y="5" width="20" height="14" rx="2"/>
+    <path d="m3.3 6.4 8.7 7 8.7-7m-17 11.1 5.3-5m11.4 5-5.2-5"/>
+  </symbol>
+
+  <symbol id="i-phone" viewBox="0 0 24 24">
+    <path d="m6.3 3.7 3.2 3.8-1.7 2.2c1.2 2.3 3.3 4.5 5.7 5.6l2.2-1.7 3.8 3.2c.4.4.4 1 .1 1.5-1.2 2-2.6 2.8-4.5 2.2C9.7 19 5 14.1 3.3 8.9c-.7-2 .2-3.7 1.6-5 .4-.4 1-.5 1.4-.2zM14 6.4a5 5 0 0 1 3.7 3.7M14.4 3a8 8 0 0 1 6.7 6.5"/>
+  </symbol>
+
+  <symbol id="i-addr" viewBox="0 0 24 24">
+    <path d="M19.2 9.8c0 5-7.2 11.5-7.2 11.5S4.8 14.8 4.8 9.8a7.2 7.2 0 0 1 14.4 0z"/>
+    <circle cx="12" cy="9.8" r="2.6"/>
+  </symbol>
+
+  <symbol id="art-password" viewBox="0 0 160 92">
+    <ellipse cx="80" cy="73" rx="47" ry="5" fill="#dedaf5"/>
+    <rect x="41" y="19" width="64" height="47" rx="6" fill="#6154b5"/>
+    <rect x="45" y="24" width="56" height="36" rx="3" fill="#d9e1fc"/>
+    <path d="M66 66h14v4h9v3H57v-3h9z" fill="#8f87c4"/>
+    <rect x="52" y="38" width="38" height="9" rx="4" fill="white"/>
+    <g fill="#9082c8">
+      <circle cx="60" cy="42.5" r="1.5"/><circle cx="66" cy="42.5" r="1.5"/><circle cx="72" cy="42.5" r="1.5"/>
+    </g>
+    <path d="M94 51v-7a8 8 0 0 1 16 0v7" fill="none" stroke="#423689" stroke-width="4"/>
+    <rect x="89" y="48" width="26" height="22" rx="5" fill="#179ab3"/>
+    <path d="M102 57v5" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  </symbol>
+
+  <symbol id="art-session" viewBox="0 0 160 92">
+    <ellipse cx="80" cy="73" rx="48" ry="5" fill="#cee7eb"/>
+    <rect x="40" y="20" width="75" height="49" rx="6" fill="#207d9c"/>
+    <path d="M44 31h67v33H44z" fill="#f3fbfc"/>
+    <g fill="#c6f4f4"><circle cx="47" cy="25.5" r="1.5"/><circle cx="52" cy="25.5" r="1.5"/></g>
+    <path d="M50 54h8l5-11 5 15 6-10h8" fill="none" stroke="#18a0b6" stroke-width="2.8" stroke-linejoin="round"/>
+    <circle cx="107" cy="59" r="15" fill="#7564c7"/>
+    <circle cx="107" cy="59" r="10" fill="none" stroke="#dbd6fe" stroke-width="1.5"/>
+    <path d="M107 53v6l4 2" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+  </symbol>
+
+  <symbol id="art-help" viewBox="0 0 170 105">
+    <ellipse cx="88" cy="90" rx="55" ry="6" fill="#c9e6ea"/>
+    <path d="M53 19h77a9 9 0 0 1 9 9v35a9 9 0 0 1-9 9h-5l1 12-18-12H53a9 9 0 0 1-9-9V28a9 9 0 0 1 9-9z" fill="#7664c4"/>
+    <path d="M34 38h56a8 8 0 0 1 8 8v27a8 8 0 0 1-8 8H57L42 92l1-11h-9a8 8 0 0 1-8-8V46a8 8 0 0 1 8-8z" fill="#1195ad"/>
+    <g fill="white"><circle cx="48" cy="60" r="3.3"/><circle cx="62" cy="60" r="3.3"/><circle cx="76" cy="60" r="3.3"/></g>
+    <path d="M106 36a7 7 0 0 1 14 0c0 6-7 6-7 12" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="113" cy="56" r="2" fill="white"/>
+    <path d="M145 21l5-3m-7-2 2-4" stroke="#e9a1bd" stroke-width="3" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
+<div id="auth-screen">
+  <div class="auth-card">
+    <h1>e-ID Portal</h1>
+    <p class="demo-note" data-mt="Proġett tal-iskola. Uża dettalji u password fittizji.">Unofficial school project. Use made-up details and a demo password.</p>
+    <h2 id="auth-title">Sign In</h2>
+
+    <form id="auth-form">
+      <label for="id-in" data-mt="Numru ta’ identifikazzjoni tad-demo">Demo ID number</label>
+      <input id="id-in" class="auth-input" placeholder="DEMO001"
+             autocomplete="username" autocapitalize="characters" spellcheck="false" required>
+
+      <label for="pass-in" data-mt="Password tad-demo">Demo password</label>
+      <input id="pass-in" class="auth-input" type="password"
+             autocomplete="current-password" required>
+
+      <button id="auth-submit" class="auth-btn" type="submit">Sign In</button>
+    </form>
+
+    <p id="auth-message" class="message" role="status"></p>
+    <button id="fresh-id" class="text-btn" type="button" data-mt="Uża ID ġdida" hidden>Use a new demo ID</button>
+    <button id="toggle-text" class="text-btn" type="button">Create an account</button>
+  </div>
+</div>
+
+<div id="main-app" hidden>
+  <header>
+    <button id="menu-toggle" class="menu-toggle" type="button"
+            aria-label="Open menu" aria-controls="drawer"
+            aria-haspopup="dialog" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+
+    <div class="user-top">
+      <img class="top-avatar" id="mini-img" alt="">
+      <div><b id="h-name"></b><span id="h-id"></span></div>
+    </div>
+  </header>
+
+  <dialog id="drawer" aria-labelledby="menu-title">
+    <div class="drawer-head">
+      <h2 id="menu-title" data-mt="Menù">Menu</h2>
+      <button id="close-menu" type="button" aria-label="Close menu" autofocus>×</button>
+    </div>
+
+    <div class="language" role="group" aria-label="Language / Lingwa">
+      <button type="button" data-lang="en" aria-label="English" lang="en">EN</button>
+      <button type="button" data-lang="mt" aria-label="Malti" lang="mt">MT</button>
+    </div>
+
+    <nav class="drawer-nav" aria-labelledby="menu-title">
+      <button type="button" data-go="info" data-mt="Paġna ewlenija">Home</button>
+      <details open>
+        <summary data-mt="Immaniġġja l-privatezza u s-sigurtà">Manage Privacy &amp; Security</summary>
+        <div>
+          <button type="button" data-go="info">
+            <svg class="icon-svg" aria-hidden="true"><use href="#i-info"/></svg>
+            <span data-mt="L-informazzjoni tiegħi">My Info</span>
+          </button>
+
+          <details>
+            <summary>
+              <svg class="icon-svg" aria-hidden="true"><use href="#i-privacy"/></svg>
+              <span data-mt="Privatezza u sigurtà">Privacy &amp; Security</span>
+            </summary>
+            <div>
+              <button type="button" data-go="privacy" data-mt="Ħarsa ġenerali">Overview</button>
+              <button type="button" data-go="privacy" data-card="password-card">Password</button>
+              <button type="button" data-go="privacy" data-card="session-card" data-mt="Sessjoni attwali">Current session</button>
+            </div>
+          </details>
+
+          <button type="button" data-go="help">
+            <svg class="icon-svg" aria-hidden="true"><use href="#i-help"/></svg>
+            <span data-mt="Għajnuna">Help</span>
+          </button>
+        </div>
+      </details>
+
+      <button type="button" data-go="contact" data-mt="Ikkuntattjana">Contact Us</button>
+    </nav>
+  </dialog>
+
+  <nav class="tabs" aria-label="Main navigation">
+    <button id="info-tab" class="tab active" data-section="info" aria-controls="info" aria-current="page">
+      <svg class="nav-icon" aria-hidden="true"><use href="#i-info"/></svg>
+      <span data-mt="ID-DETTALJI TIEGĦI">MY INFO</span>
+    </button>
+
+    <button class="tab" data-section="privacy" aria-controls="privacy">
+      <svg class="nav-icon" aria-hidden="true"><use href="#i-privacy"/></svg>
+      <span data-mt="PRIVATEZZA U SIGURTÀ">PRIVACY &amp; SECURITY</span>
+    </button>
+
+    <button class="tab" data-section="help" aria-controls="help">
+      <svg class="nav-icon" aria-hidden="true"><use href="#i-help"/></svg>
+      <span data-mt="GĦAJNUNA">HELP</span>
+    </button>
+  </nav>
+
+  <p id="app-message" class="message" role="status"></p>
+
+  <main>
+    <section id="info" class="section" tabindex="-1" aria-labelledby="info-tab">
+      <button id="photo-button" type="button" class="photo-button">
+        <img id="main-photo" class="main-photo" alt="">
+      </button>
+      <input type="file" id="up" accept="image/jpeg,image/png,image/webp" hidden>
+
+      <div class="info-grid" id="identity-fields"></div>
+      <div class="info-grid" id="contact-fields"></div>
+      <div id="address-field"></div>
+
+      <button type="button" id="lock-trigger" class="lock-btn" data-mt="Ikkonferma u sakkar id-dettalji">Confirm &amp; lock details</button>
+    </section>
+
+    <section id="privacy" class="section" hidden>
+      <h2 tabindex="-1" data-mt="Privatezza u sigurtà">Privacy &amp; security</h2>
+
+      <div class="security-grid">
+        <details id="password-card" class="security-card">
+          <summary>
+            <svg class="security-art" aria-hidden="true"><use href="#art-password"/></svg>
+            <span class="card-title">Password</span>
+            <span class="detail-link" data-mt="Dettalji tal-password">Password details</span>
+          </summary>
+          <p data-mt="Il-browser jaħżen il-password tad-demo bħala hash b’salt. Uża password magħmula apposta għal dan il-proġett.">This browser saves a salted hash of your demo password. Use a password you made up just for this project.</p>
+        </details>
+
+        <details id="session-card" class="security-card">
+          <summary>
+            <svg class="security-art" aria-hidden="true"><use href="#art-session"/></svg>
+            <span class="card-title" data-mt="Sessjoni attwali">Current session</span>
+            <span class="detail-link" data-mt="Dettalji tas-sessjoni">Session details</span>
+          </summary>
+          <p>
+            <span data-mt="L-ID ta’ din is-sessjoni">Signed in as</span>
+            <b id="session-account"></b>.
+            <span data-mt="Is-sessjoni tibqa’ attiva meta terġa’ ttella’ din il-paġna.">Refreshing this tab keeps you signed in.</span>
+          </p>
+        </details>
+      </div>
+
+      <p class="privacy-note" data-mt="Dan il-proġett jaħżen il-profili f’dan il-browser. Min għandu aċċess għad-data maħżuna jista’ jibdilha.">This school demo stores profiles in this browser. Anyone with access to its storage can change the data.</p>
+    </section>
+
+    <section id="help" class="section" hidden>
+      <div class="help-intro">
+        <h2 tabindex="-1" data-mt="Mistoqsijiet frekwenti">Frequently asked questions</h2>
+        <svg viewBox="0 0 170 105" aria-hidden="true"><use href="#art-help"/></svg>
+      </div>
+      <div class="faq-list" id="faqs"></div>
+    </section>
+
+    <section id="contact" class="section" hidden>
+      <h2 tabindex="-1" data-mt="Ikkuntattjana">Contact Us</h2>
+      <p data-mt="Għal mistoqsijiet dwar dan il-proġett, ikkuntattja lill-awtur permezz tal-klassi.">For questions about this school project, contact the project author through your class.</p>
+      <button class="text-btn" type="button" data-go="help" data-mt="Ara l-mistoqsijiet frekwenti">Read the FAQs</button>
+    </section>
+  </main>
+</div>
+
+<script>
+'use strict';
+
+const $ = id => document.getElementById(id);
+const all = selector => Array.from(document.querySelectorAll(selector));
+
+const DB = 'eid_db';
+const SESSION = 'active_session';
+const LANG = 'eid_demo_language';
+
+let lang = 'en';
+let login = true;
+let user = null;
+let busy = false;
+let uploading = false;
+let uploadToken = 0;
+
+const t = (en, mt) => lang === 'mt' ? mt : en;
+const drawer = $('drawer');
+
+const fields = {
+  name:  ['Name', 'Isem', 80, 'identity-fields'],
+  dob:   ['Date of birth', 'Data tat-twelid', 10, 'identity-fields'],
+  email: ['Email', 'Indirizz elettroniku', 254, 'contact-fields'],
+  phone: ['Phone number', 'Numru tat-telefown', 30, 'contact-fields'],
+  addr:  ['Address', 'Indirizz', 300, 'address-field']
+};
+
+const faq = [
+  [
+    'How do I create a demo account?', 'Kif noħloq kont tad-demo?',
+    'Choose Create an account, enter a made-up ID and a password of at least six characters, then select Create Account.',
+    'Agħżel Oħloq kont, daħħal ID fittizja u password ta’ mill-inqas sitt karattri, u kkonferma.'
+  ],
+  [
+    'How do I edit my details?', 'Kif nibdel id-dettalji tiegħi?',
+    'Open My Info and select a field. Enter dates as DD/MM/YYYY. For a Maltese phone number, enter eight digits. For another country, include its three-digit code.',
+    'Iftaħ L-informazzjoni tiegħi u agħżel dettall. Daħħal id-data bħala DD/MM/YYYY. Għal numru Malti, daħħal tmien ċifri. Għal pajjiż ieħor, żid il-kodiċi tiegħu ta’ tliet ċifri.'
+  ],
+  [
+    'Which photos can I upload?', 'Liema ritratti nista’ ntella’?',
+    'Select your portrait and choose a JPG, PNG or WebP up to 1 MB.',
+    'Agħżel ir-ritratt tal-profil u tella’ fajl JPG, PNG jew WebP sa 1 MB.'
+  ],
+  [
+    'What happens when I lock my profile?', 'X’jiġri meta nsakkar il-profil?',
+    'Complete your details first. Once you confirm, the fields and photo become read-only.',
+    'Imla d-dettalji l-ewwel. Wara li tikkonferma, id-dettalji u r-ritratt ma jistgħux jinbidlu.'
+  ],
+  [
+    'Where are my details saved?', 'Fejn jinżammu d-dettalji tiegħi?',
+    'Your demo profile stays in this browser. Clearing the site data removes the saved accounts.',
+    'Il-profil tad-demo jinżamm f’dan il-browser. Jekk tħassar id-data tas-sit, jitħassru l-kontijiet maħżuna.'
+  ]
+];
+
+const placeholder = 'data:image/svg+xml,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 190">' +
+  '<rect width="150" height="190" fill="#f0f9fa"/>' +
+  '<circle cx="75" cy="66" r="28" fill="#a0c4c5"/>' +
+  '<path d="M25 160v-20a50 50 0 0 1 100 0v20" fill="#a0c4c5"/></svg>'
+);
+
+function buildContent() {
+  for (const [field, spec] of Object.entries(fields)) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = field === 'addr' ? 'address-item' : 'info-item';
+    button.dataset.field = field;
+
+    button.innerHTML =
+      '<span class="icon-circle"><svg class="icon-svg" aria-hidden="true">' +
+      '<use href="#i-' + field + '"/></svg></span>' +
+      '<span class="val-main" id="n-' + field + '"></span>';
+
+    if (field === 'name') {
+      button.insertAdjacentHTML('beforeend', '<span class="val-sub" id="n-id-sub"></span>');
+    }
+
+    button.onclick = () => editField(field);
+    $(spec[3]).append(button);
+  }
+
+  for (const [enQ, mtQ, enA, mtA] of faq) {
+    const detail = document.createElement('details');
+    const question = document.createElement('summary');
+    const answer = document.createElement('p');
+
+    question.textContent = enQ;
+    question.dataset.mt = mtQ;
+    answer.textContent = enA;
+    answer.dataset.mt = mtA;
+
+    detail.append(question, answer);
+    $('faqs').append(detail);
+  }
+}
+
+function status(text = '', success = false) {
+  const box = $(user ? 'app-message' : 'auth-message');
+  box.textContent = text;
+  box.classList.toggle('success', success);
+}
+
+function setLanguage(next, remember = true) {
+  lang = next === 'mt' ? 'mt' : 'en';
+  document.documentElement.lang = lang;
+
+  for (const el of all('[data-mt]')) {
+    if (!el.hasAttribute('data-en')) el.dataset.en = el.textContent;
+    el.textContent = t(el.dataset.en, el.dataset.mt);
+  }
+
+  for (const el of all('[data-lang]')) {
+    el.setAttribute('aria-pressed', String(el.dataset.lang === lang));
+  }
+
+  $('menu-toggle').ariaLabel = t('Open menu', 'Iftaħ il-menù');
+  $('close-menu').ariaLabel = t('Close menu', 'Agħlaq il-menù');
+  document.querySelector('.tabs').ariaLabel = t('Main navigation', 'Navigazzjoni ewlenija');
+
+  if (remember) {
+    try { localStorage.setItem(LANG, lang); }
+    catch { /* The selected language still applies to this visit. */ }
+  }
+
+  renderAuth();
+  renderProfile();
+  status();
+}
+
+function go(page, card, moveFocus = false) {
+  if (!['info', 'privacy', 'help', 'contact'].includes(page)) return;
+
+  for (const section of all('.section')) {
+    section.hidden = section.id !== page;
+  }
+
+  for (const tab of all('[data-section]')) {
+    const active = tab.dataset.section === page;
+    tab.classList.toggle('active', active);
+    if (active) tab.setAttribute('aria-current', 'page');
+    else tab.removeAttribute('aria-current');
+  }
+
+  if (drawer.open) drawer.close();
+
+  const section = $(page);
+  let target = section.querySelector('h2') || section;
+
+  if (page === 'privacy' && ['password-card', 'session-card'].includes(card)) {
+    $(card).open = true;
+    target = $(card).querySelector('summary');
+  }
+
+  status();
+
+  if (moveFocus) {
+    target.focus({preventScroll: true});
+    target.scrollIntoView({block: 'nearest'});
+  }
+}
+
+$('menu-toggle').onclick = () => {
+  if (!user || drawer.open) return;
+  drawer.showModal();
+  $('menu-toggle').setAttribute('aria-expanded', 'true');
+};
+
+$('close-menu').onclick = () => drawer.close();
+
+drawer.addEventListener('close', () => {
+  $('menu-toggle').setAttribute('aria-expanded', 'false');
+});
+
+drawer.addEventListener('click', event => {
+  if (event.target !== drawer) return;
+  const r = drawer.getBoundingClientRect();
+  if (event.clientX < r.left || event.clientX > r.right ||
+      event.clientY < r.top || event.clientY > r.bottom) {
+    drawer.close();
+  }
+});
+
+for (const el of all('[data-lang]')) el.onclick = () => setLanguage(el.dataset.lang);
+for (const el of all('[data-go]')) el.onclick = () => go(el.dataset.go, el.dataset.card, true);
+for (const el of all('[data-section]')) el.onclick = () => go(el.dataset.section);
+
+function readDB() {
+  let raw;
+
+  try { raw = localStorage.getItem(DB); }
+  catch {
+    throw Error(t('Allow browser storage to use the demo.', 'Ħalli l-browser jaħżen id-data biex tuża d-demo.'));
+  }
+
+  if (raw === null) return Object.create(null);
+
+  try {
+    const db = JSON.parse(raw);
+    if (!db || typeof db !== 'object' || Array.isArray(db)) throw Error();
+    return Object.assign(Object.create(null), db);
+  } catch {
+    throw Error(t(
+      'Saved data cannot be read. Your profiles have been left intact.',
+      'Id-data maħżuna ma setgħetx tinqara. Il-profili tiegħek għadhom kif kienu.'
+    ));
+  }
+}
+
+function saveDB(db) {
+  try { localStorage.setItem(DB, JSON.stringify(db)); }
+  catch {
+    throw Error(t(
+      'Could not save. Storage may be full or disabled.',
+      'Ma setax jiġi ssejvjat. L-ispazju jista’ jkun mimli jew il-ħażna diżattivata.'
+    ));
+  }
+}
+
+function account(db, id) {
+  const record = db[id];
+  return record && typeof record === 'object' && record.id === id ? record : null;
+}
+
+function renderAuth() {
+  const title = login ? t('Sign In', 'Idħol') : t('Create an account', 'Oħloq kont');
+  $('auth-title').textContent = title;
+  $('auth-submit').textContent = login ? title : t('Create Account', 'Oħloq kont');
+  $('toggle-text').textContent = login
+    ? t('Create an account', 'Oħloq kont')
+    : t('Back to Sign In', 'Lura għad-dħul');
+
+  $('pass-in').autocomplete = login ? 'current-password' : 'new-password';
+  $('pass-in').minLength = login ? 1 : 6;
+}
+
+function setMode(signIn) {
+  login = signIn;
+  $('pass-in').value = '';
+  $('fresh-id').hidden = true;
+  renderAuth();
+  status();
+}
+
+function existing(id) {
+  setMode(true);
+  $('id-in').value = id;
+  $('fresh-id').hidden = false;
+
+  status(id + t(
+    ' already exists. Enter its original password or choose a new demo ID.',
+    ' diġà teżisti. Daħħal il-password oriġinali jew agħżel ID ġdida.'
+  ));
+
+  $('pass-in').focus();
+}
+
+$('toggle-text').onclick = () => {
+  if (!busy) setMode(!login);
+};
+
+$('fresh-id').onclick = () => {
+  if (busy) return;
+
+  try {
+    const db = readDB();
+    let n = 1;
+    let id;
+
+    do {
+      id = 'DEMO' + String(n++).padStart(3, '0');
+    } while (Object.hasOwn(db, id));
+
+    setMode(false);
+    $('id-in').value = id;
+
+    status(id + t(
+      ' is available. Choose a password of at least six characters.',
+      ' hija disponibbli. Agħżel password ta’ mill-inqas sitt karattri.'
+    ), true);
+
+    $('pass-in').focus();
+  } catch (e) {
+    status(e.message);
+  }
+};
+
+function hex(bytes) {
+  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function newSalt() {
+  return hex(crypto.getRandomValues(new Uint8Array(16)));
+}
+
+async function hash(password, salt) {
+  if (!globalThis.crypto?.subtle) {
+    throw Error(t(
+      'Open this demo on HTTPS or localhost to use password hashing.',
+      'Iftaħ id-demo fuq HTTPS jew localhost biex tuża l-hashing tal-password.'
+    ));
+  }
+
+  if (!/^[a-f0-9]{32}$/.test(salt)) {
+    throw Error(t('Invalid saved account data.', 'Id-data maħżuna tal-kont mhix valida.'));
+  }
+
+  const bytes = Uint8Array.from(salt.match(/../g), part => parseInt(part, 16));
+
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']
+  );
+
+  const result = await crypto.subtle.deriveBits({
+    name: 'PBKDF2', salt: bytes, iterations: 100000, hash: 'SHA-256'
+  }, key, 256);
+
+  return hex(new Uint8Array(result));
+}
+
+function showProfile(record) {
+  user = record;
+  $('auth-screen').hidden = true;
+  $('main-app').hidden = false;
+  $('pass-in').value = '';
+  go('info');
+  renderProfile();
+}
+
+$('auth-form').onsubmit = async event => {
+  event.preventDefault();
+  if (busy) return;
+
+  const id = $('id-in').value.trim().toUpperCase();
+  const password = $('pass-in').value;
+  $('id-in').value = id;
+
+  if (!id || !password) {
+    return status(t('Enter your demo ID and password.', 'Daħħal l-ID u l-password tad-demo.'));
+  }
+
+  if (!login && (!/^[A-Z0-9-]{3,20}$/.test(id) || password.length < 6 || password.length > 128)) {
+    return status(t(
+      'Use 3–20 letters, digits or hyphens for the ID and 6–128 characters for the password.',
+      'Għall-ID uża minn 3 sa 20 ittra, ċifra jew sing. Għall-password uża minn 6 sa 128 karattru.'
+    ));
+  }
+
+  busy = true;
+  $('auth-submit').disabled = $('toggle-text').disabled = true;
+  status();
+
+  try {
+    let db = readDB();
+    let record = account(db, id);
+
+    if (!login) {
+      if (Object.hasOwn(db, id)) return existing(id);
+
+      const salt = newSalt();
+      const passwordHash = await hash(password, salt);
+
+      db = readDB();
+      if (Object.hasOwn(db, id)) return existing(id);
+
+      record = {
+        id, salt, passwordHash,
+        name: '', dob: '', email: '', phone: '', addr: '', photo: '',
+        isLocked: false
+      };
+
+      db[id] = record;
+      saveDB(db);
+      setMode(true);
+    } else {
+      $('fresh-id').hidden = false;
+
+      if (!record) {
+        throw Error(t(
+          'No readable account with that ID is saved here. Use the same browser or choose a new demo ID.',
+          'Ma nstabx kont li jista’ jinqara b’din l-ID. Uża l-istess browser jew agħżel ID ġdida.'
+        ));
+      }
+
+      const legacy = !record.passwordHash && typeof record.password === 'string';
+      const valid = legacy
+        ? password === record.password
+        : await hash(password, record.salt) === record.passwordHash;
+
+      if (!valid) {
+        throw Error(t(
+          'Incorrect demo password. Check capitals and spaces, or choose a new demo ID.',
+          'Il-password mhix tajba. Iċċekkja l-ittri kapitali u l-ispazji, jew agħżel ID ġdida.'
+        ));
+      }
+
+      let salt, passwordHash;
+
+      if (legacy) {
+        salt = newSalt();
+        passwordHash = await hash(password, salt);
+      }
+
+      db = readDB();
+      const latest = account(db, id);
+
+      if (!latest || latest.password !== record.password ||
+          latest.salt !== record.salt || latest.passwordHash !== record.passwordHash) {
+        throw Error(t('The account changed. Please sign in again.', 'Il-kont inbidel. Erġa’ idħol.'));
+      }
+
+      record = latest;
+
+      if (legacy) {
+        record.salt = salt;
+        record.passwordHash = passwordHash;
+        delete record.password;
+        saveDB(db);
+      }
+    }
+
+    try { sessionStorage.setItem(SESSION, id); }
+    catch {
+      throw Error(t('Allow session storage, then sign in again.', 'Attiva l-ħażna tas-sessjoni u erġa’ idħol.'));
+    }
+
+    showProfile(record);
+  } catch (e) {
+    status(e.message);
+  } finally {
+    busy = false;
+    $('auth-submit').disabled = $('toggle-text').disabled = false;
+  }
+};
+
+function formatPhone(value) {
+  const number = value.replace(/[\s-]/g, '');
+
+  if (/^\d{8}$/.test(number)) return '(+356) ' + number;
+
+  const match = /^(?:\(\+([1-9]\d{2})\)|\(([1-9]\d{2})\)|(?:\+|00)?([1-9]\d{2}))(\d{8})$/.exec(number);
+  if (!match) return '';
+
+  const countryCode = match[1] || match[2] || match[3];
+  return '(+' + countryCode + ') ' + match[4];
+}
+
+function displayValue(field, stored) {
+  const value = String(stored ?? '').trim();
+
+  if (field === 'dob') {
+    return value.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$3/$2/$1');
+  }
+
+  if (field === 'phone') return formatPhone(value) || value;
+
+  return value;
+}
+
+function renderProfile() {
+  if (!user) return;
+  const locked = Boolean(user.isLocked);
+
+  $('h-name').textContent = user.name || t('Set name', 'Daħħal l-isem');
+  $('h-id').textContent = $('session-account').textContent = user.id;
+  $('n-id-sub').textContent = '(' + user.id + ')';
+
+  for (const [field, spec] of Object.entries(fields)) {
+    const label = t(spec[0], spec[1]);
+    const value = displayValue(field, user[field]) ||
+      (locked ? '—' : t('Set ', 'Daħħal: ') + label);
+
+    const element = $('n-' + field);
+    element.textContent = value;
+
+    const button = element.closest('button');
+    button.disabled = locked;
+    button.setAttribute('aria-label', label + ': ' + value);
+  }
+
+  const image = /^data:image\/(jpeg|png|webp);base64,/.test(user.photo || '')
+    ? user.photo
+    : placeholder;
+
+  $('main-photo').src = $('mini-img').src = image;
+  $('photo-button').disabled = $('up').disabled = locked || uploading;
+  $('photo-button').ariaLabel = locked
+    ? t('Portrait', 'Ritratt')
+    : uploading
+      ? t('Loading photo…', 'Ir-ritratt qed jitla’…')
+      : t('Click to upload a photo', 'Agħżel ritratt');
+
+  $('lock-trigger').hidden = locked;
+  $('lock-trigger').disabled = uploading;
+}
+
+function endSession() {
+  if (drawer.open) drawer.close();
+
+  user = null;
+  uploading = false;
+  uploadToken++;
+
+  try { sessionStorage.removeItem(SESSION); }
+  catch { /* The account is already unavailable. */ }
+
+  for (const panel of all('main details')) panel.open = false;
+
+  $('main-app').hidden = true;
+  $('auth-screen').hidden = false;
+  $('auth-form').reset();
+  setMode(true);
+
+  status(t(
+    'Your saved account is no longer available.',
+    'Il-kont maħżun tiegħek m’għadux disponibbli.'
+  ));
+}
+
+function saveProfile(changes) {
+  if (!user) return;
+
+  const db = readDB();
+  const record = account(db, user.id);
+
+  if (!record) return endSession();
+
+  if (record.isLocked) {
+    user = record;
+    renderProfile();
+    throw Error(t('This profile is locked.', 'Dan il-profil huwa msakkar.'));
+  }
+
+  const next = {...record, ...changes};
+  db[next.id] = next;
+  saveDB(db);
+
+  user = next;
+  renderProfile();
+  status();
+}
+
+function validate(field, input) {
+  const value = String(input ?? '').trim();
+  const [en, mt, limit] = fields[field];
+
+  if (!value || value.length > limit) {
+    throw Error(t('Check this field: ', 'Iċċekkja dan id-dettall: ') + t(en, mt));
+  }
+
+  if (field === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    throw Error(t('Enter a valid email address.', 'Daħħal indirizz elettroniku validu.'));
+  }
+
+  if (field === 'phone') {
+    const number = formatPhone(value);
+    if (!number) {
+      throw Error(t(
+        'Enter eight local digits or use (+XXX) XXXXXXXX.',
+        'Daħħal tmien ċifri lokali jew uża (+XXX) XXXXXXXX.'
+      ));
+    }
+    return number;
+  }
+
+  if (field !== 'dob') return value;
+
+  const iso = value.replace(/^(\d{2})\/(\d{2})\/(\d{4})$/, '$3-$2-$1');
+  const date = new Date(iso + 'T00:00:00Z');
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso) ||
+      !Number.isFinite(date.getTime()) ||
+      date.toISOString().slice(0, 10) !== iso ||
+      new Date(iso + 'T00:00:00') > new Date()) {
+    throw Error(t(
+      'Enter a valid date of birth as DD/MM/YYYY or YYYY-MM-DD.',
+      'Daħħal data tat-twelid valida bħala DD/MM/YYYY jew YYYY-MM-DD.'
+    ));
+  }
+
+  return iso;
+}
+
+function editField(field) {
+  if (!user || user.isLocked) return;
+
+  const spec = fields[field];
+  const hints = {dob: 'DD/MM/YYYY', phone: '(+XXX) XXXXXXXX'};
+  const label = t(spec[0], spec[1]);
+
+  const value = prompt(
+    hints[field] ? label + ' — ' + hints[field] : label,
+    displayValue(field, user[field])
+  );
+
+  if (value === null) return;
+
+  try { saveProfile({[field]: validate(field, value)}); }
+  catch (e) { status(e.message); }
+}
+
+$('lock-trigger').onclick = () => {
+  if (!user || uploading || user.isLocked) return;
+
+  try {
+    const record = account(readDB(), user.id);
+    if (!record) return endSession();
+
+    for (const key of Object.keys(fields)) validate(key, record[key] || '');
+
+    if (confirm(t(
+      'Lock your details and photo permanently in this demo?',
+      'Trid issakkar id-dettalji u r-ritratt għal dejjem f’din id-demo?'
+    ))) {
+      saveProfile({isLocked: true});
+    }
+  } catch (e) {
+    status(e.message);
+  }
+};
+
+$('photo-button').onclick = () => {
+  if (user && !user.isLocked && !uploading) $('up').click();
+};
+
+$('up').onchange = async () => {
+  const file = $('up').files[0];
+  $('up').value = '';
+
+  if (!file || !user || user.isLocked || uploading) return;
+
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
+      file.size > 1024 * 1024) {
+    return status(t(
+      'Choose a JPG, PNG or WebP up to 1 MB.',
+      'Agħżel JPG, PNG jew WebP sa 1 MB.'
+    ));
+  }
+
+  const id = user.id;
+  const token = ++uploadToken;
+
+  uploading = true;
+  renderProfile();
+
+  try {
+    const data = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onabort = reader.onerror = () => reject(Error(t(
+        'Could not read the file.', 'Il-fajl ma setax jinqara.'
+      )));
+      reader.readAsDataURL(file);
+    });
+
+    const img = new Image();
+    img.src = data;
+
+    try { await img.decode(); }
+    catch { throw Error(t('Unreadable image.', 'Ir-ritratt ma setax jinqara.')); }
+
+    if (token === uploadToken && user?.id === id) saveProfile({photo: data});
+  } catch (e) {
+    if (token === uploadToken) status(e.message);
+  } finally {
+    if (token === uploadToken) {
+      uploading = false;
+      renderProfile();
+    }
+  }
+};
+
+window.addEventListener('storage', event => {
+  if (!user || (event.key !== DB && event.key !== null)) return;
+
+  try {
+    const latest = account(readDB(), user.id);
+    if (!latest) return endSession();
+    user = latest;
+    renderProfile();
+  } catch (e) {
+    status(e.message);
+  }
+});
+
+buildContent();
+
+let preferred = 'en';
+try { preferred = localStorage.getItem(LANG); }
+catch { /* Use English if the preference is unavailable. */ }
+
+setLanguage(preferred, false);
+
+try {
+  const db = readDB();
+  const id = sessionStorage.getItem(SESSION);
+  if (id && account(db, id)) showProfile(account(db, id));
+  else sessionStorage.removeItem(SESSION);
+} catch (e) {
+  status(e.message);
+}
+</script>
+</body>
+</html>
